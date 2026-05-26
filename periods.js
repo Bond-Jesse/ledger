@@ -372,10 +372,10 @@ const Periods = (() => {
 
       const shells = generatePeriodsFromJob(job, start, days, count);
       // Add in reverse so newest ends up first
-      [...shells].reverse().forEach(s => {
+      for (const s of [...shells].reverse()) {
         await Data.addPeriod(s);
         await Data.injectRecurring(s.id);
-      });
+      }
       if (shells.length > 0) await Data.setActivePeriod(shells[0].id);
       App.refresh();
     });
