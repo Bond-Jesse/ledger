@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ledger — Personal Finance</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Firebase v9 compat (works as plain scripts, no bundler needed) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+  <!-- Auth screen (shown before login) -->
+  <div id="authScreen" class="hidden">
+    <div class="auth-bg"></div>
+  </div>
+
+  <!-- Loading overlay -->
+  <div id="loadingOverlay" class="hidden" style="
+    position:fixed;inset:0;background:var(--bg);z-index:9999;
+    display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1rem;">
+    <div style="font-family:var(--font-serif);font-size:2rem;color:var(--accent);">Ledger</div>
+    <div style="font-size:0.82rem;color:var(--text-muted);">Loading your data…</div>
+  </div>
+
+  <!-- App shell (hidden until logged in) -->
+  <div id="appShell" class="hidden">
+
+    <!-- Header -->
+    <header id="header">
+      <div class="header-left">
+        <span class="logo">Ledger</span>
+        <span class="logo-sub">Personal Finance</span>
+      </div>
+      <div class="header-center">
+        <button class="period-switcher" id="periodSwitcher">
+          <span class="period-icon">◈</span>
+          <span id="activePeriodLabel">No period selected</span>
+          <span class="period-caret">▾</span>
+        </button>
+        <div class="period-dropdown hidden" id="periodDropdown"></div>
+      </div>
+      <div class="header-right" style="display:flex;align-items:center;gap:0.75rem;">
+        <button class="btn-ghost btn-sm" id="exportCsvBtn" title="Export current period to CSV">↓ CSV</button>
+        <button class="btn-ghost" id="newPeriodBtn">+ New Period</button>
+        <div id="userBadge" style="display:flex;align-items:center;gap:0.5rem;"></div>
+      </div>
+    </header>
+
+    <!-- Layout -->
+    <div class="layout">
+
+      <!-- Sidebar -->
+      <nav class="sidebar" id="sidebar">
+        <ul>
+          <li><a href="#" class="nav-link active" data-view="summary">
+            <span class="nav-icon">◎</span> Summary
+          </a></li>
+          <li><a href="#" class="nav-link" data-view="periods">
+            <span class="nav-icon">⊞</span> Periods
+          </a></li>
+          <li><a href="#" class="nav-link" data-view="income">
+            <span class="nav-icon">↑</span> Income
+          </a></li>
+          <li><a href="#" class="nav-link" data-view="calendar">
+            <span class="nav-icon">◫</span> Calendar
+          </a></li>
+          <li><a href="#" class="nav-link" data-view="expenses">
+            <span class="nav-icon">↓</span> Expenses
+          </a></li>
+          <li><a href="#" class="nav-link" data-view="budget">
+            <span class="nav-icon">⊟</span> Budget
+          </a></li>
+          <li><a href="#" class="nav-link" data-view="savings">
+            <span class="nav-icon">◈</span> Savings
+          </a></li>
+        </ul>
+      </nav>
+
+      <!-- Content -->
+      <main class="content" id="content">
+        <div id="view-summary"  class="view active"></div>
+        <div id="view-periods"  class="view"></div>
+        <div id="view-income"   class="view"></div>
+        <div id="view-calendar" class="view"></div>
+        <div id="view-expenses" class="view"></div>
+        <div id="view-budget"   class="view"></div>
+        <div id="view-savings"  class="view"></div>
+      </main>
+    </div>
+
+  </div><!-- /appShell -->
+
+  <!-- Modal -->
+  <div class="modal-overlay hidden" id="modalOverlay">
+    <div class="modal" id="modal">
+      <button class="modal-close" id="modalClose">✕</button>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="firebase.js"></script>
+  <script src="data.js"></script>
+  <script src="auth.js"></script>
+  <script src="periods.js"></script>
+  <script src="income.js"></script>
+  <script src="expenses.js"></script>
+  <script src="budget.js"></script>
+  <script src="savings.js"></script>
+  <script src="calendar.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
