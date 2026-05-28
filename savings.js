@@ -16,6 +16,7 @@ const Savings = (() => {
 
   let _hidden   = false;  // global amounts show/hide
   let _compact  = false;  // compact card list vs full cards
+  let _bound    = false;  // delegated listener attached flag
 
   // ── Goal colours palette ────────────────────────────────────────────────
   const GOAL_COLORS = [
@@ -379,23 +380,20 @@ const Savings = (() => {
 
   function bindEvents(periodId, period) {
 
-    // Show/hide amounts
+    // These buttons live inside innerHTML so they're brand-new each render — safe to re-bind.
     document.getElementById('toggleSavingsVisibility')?.addEventListener('click', () => {
       _hidden = !_hidden;
       render();
     });
 
-    // Compact toggle
     document.getElementById('toggleCompact')?.addEventListener('click', () => {
       _compact = !_compact;
       render();
     });
 
-    // ── New goal form open/close ──
     document.getElementById('addGoalBtn')?.addEventListener('click', () => {
       const form = document.getElementById('goalForm');
       const wasHidden = form.classList.contains('hidden');
-      // close edit form if open
       document.getElementById('editGoalForm')?.classList.add('hidden');
       if (wasHidden) {
         form.innerHTML = renderGoalForm();
@@ -407,8 +405,18 @@ const Savings = (() => {
       }
     });
 
-    // ── Delegated clicks on goals container ──
+    // ── Delegated click handler — attached ONCE only ──
+    // #view-savings is never replaced between renders (only its innerHTML changes).
+    // Attaching this listener on every render stacks copies, so every click fires
+    // multiple times — that's what caused amounts to multiply (2 → 200 → 800 etc).
+    if (_bound) return;
+    _bound = true;
+
     document.getElementById('view-savings')?.addEventListener('click', async (e) => {
+      // Always read fresh data — never rely on the periodId/period closed over at render time.
+      const currentPeriod = Data.getActivePeriod();
+      if (!currentPeriod) return;
+      const currentPeriodId = currentPeriod.id;
 
       // Emoji picker toggle
       if (e.target.closest('#emojiPickerBtn')) {
@@ -429,20 +437,17 @@ const Savings = (() => {
       const editBtn = e.target.closest('[data-edit-goal]');
       if (editBtn) {
         const goalId   = editBtn.dataset.editGoal;
-        const p        = Data.getActivePeriod();
-        const goal     = p?.savingsGoals.find(g => g.id === goalId);
+        const goal     = currentPeriod.savingsGoals?.find(g => g.id === goalId);
         if (!goal) return;
-        // close new-goal form
         document.getElementById('goalForm')?.classList.add('hidden');
         const editForm = document.getElementById('editGoalForm');
         editForm.innerHTML = renderGoalForm(goal);
         editForm.classList.remove('hidden');
-        // move edit form after the goal card
         const card = document.querySelector(`[data-goal-id="${goalId}"]`);
         if (card && card.nextSibling) {
           card.parentNode.insertBefore(editForm, card.nextSibling);
         }
-        bindGoalFormEvents(editForm, periodId, goal.id);
+        bindGoalFormEvents(editForm, currentPeriodId, goal.id);
         editForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         return;
       }
@@ -451,30 +456,23 @@ const Savings = (() => {
       const delBtn = e.target.closest('[data-del-goal]');
       if (delBtn) {
         if (confirm('Delete this savings goal?')) {
-          await Data.deleteSavingsGoal(periodId, delBtn.dataset.delGoal);
+          await Data.deleteSavingsGoal(currentPeriodId, delBtn.dataset.delGoal);
           render();
         }
         return;
       }
 
-      // ── KEY FIX: find input via DOM traversal, NOT getElementById ──
-
       // Add contribution
       const addBtn = e.target.closest('[data-add-contrib]');
       if (addBtn) {
         const goalId = addBtn.dataset.addContrib;
-        // Walk up to the goal card, then find the input inside it
         const card   = addBtn.closest('[data-goal-id]');
         const input  = card?.querySelector('[data-contrib-input]');
         const amount = parseFloat(input?.value);
-        if (isNaN(amount) || amount <= 0) {
-          input?.focus();
-          return;
-        }
-        const p    = Data.getActivePeriod();
-        const goal = p?.savingsGoals.find(g => g.id === goalId);
+        if (isNaN(amount) || amount <= 0) { input?.focus(); return; }
+        const goal = currentPeriod.savingsGoals?.find(g => g.id === goalId);
         if (!goal) return;
-        await Data.updateSavingsGoal(periodId, goalId, {
+        await Data.updateSavingsGoal(currentPeriodId, goalId, {
           contributed: Number(goal.contributed) + amount
         });
         if (input) input.value = '';
@@ -489,15 +487,11 @@ const Savings = (() => {
         const card   = subBtn.closest('[data-goal-id]');
         const input  = card?.querySelector('[data-contrib-input]');
         const amount = parseFloat(input?.value);
-        if (isNaN(amount) || amount <= 0) {
-          input?.focus();
-          return;
-        }
-        const p    = Data.getActivePeriod();
-        const goal = p?.savingsGoals.find(g => g.id === goalId);
+        if (isNaN(amount) || amount <= 0) { input?.focus(); return; }
+        const goal = currentPeriod.savingsGoals?.find(g => g.id === goalId);
         if (!goal) return;
         const newVal = Math.max(0, Number(goal.contributed) - amount);
-        await Data.updateSavingsGoal(periodId, goalId, { contributed: newVal });
+        await Data.updateSavingsGoal(currentPeriodId, goalId, { contributed: newVal });
         if (input) input.value = '';
         render();
       }
